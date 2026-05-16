@@ -1,0 +1,20 @@
+Time spent: 3 hours
+
+Questions 
+1. What did I do this week?
+    - I researched the project idea and started formulating how the model will work.
+    - I also began learning about Markov chain models how they can produce text. 
+    - I looked into useful data structures (i.e dictionaries, lists, tuples)
+    - I initialised the repository and set up Poetry for dependency management. 
+2. How has the program progressed?
+    - The project is still in the very early stages. So far, the main focus is on topic research (Markov chain text generation).
+    - The direction I want to take the project in is becoming clearer. 
+3. What did I learn this week/today?
+    - I've learned the basics of Markov chain text generation (transition probabilities etc.).
+    - I also learned about how different data structures might work in relation to Markov chain generators. 
+4. What remains unclear or has been challenging?
+    - It has been challening to grapple with the different orders of a markov chain model especially due to the added complexity. 
+    - In addition, deciding on the preprocessing methods have proven to be more difficult that anticipated. 
+5. What will I do next?
+    - I will implement a basic markov chain text generator and experiment with small text datasets.
+    - I will then work on modular code and higher-order models.
