@@ -1,3 +1,7 @@
+[tool.poetry]
+name = "sentence-generator"
+package-mode = false
+
 [project]
 name = "sentence-generator"
 version = "0.1.0"
@@ -7,7 +11,11 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "pytest (>=9.0.3,<10.0.0)"
+    "pytest (>=9.0.3,<10.0.0)",
+    "pandas (>=3.0.3,<4.0.0)",
+    "scikit-learn (>=1.8.0,<2.0.0)",
+    "markdown (>=3.10.2,<4.0.0)",
+    "stevedore (>=5.8.0,<6.0.0)"
 ]
 
 
