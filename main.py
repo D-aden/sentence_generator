@@ -37,70 +37,113 @@ def clean_articles(text):
 
     return tokens
 
+# CREATE NODE AND TRIE CLASS
 
+class Node: 
+    def __init__(self):
+        """
+        - self.children links each word of a sequence to a possible successor
+        - self.count shows how many times a node was at the end of a sequence
+        """
+        self.children = {}
+        self.count = 0
+
+class TrieTree: 
+    def __init__(self):
+        self.root = Node()
+    
+    def add_sequence(self, sequence): 
+        """
+        - adds sequences to the trie, one word at a time 
+        - creates new nodes for unseen words
+        - increments the count at the last node of a sequence (then means that the sequence has been seen)
+        """
+        current = self.root 
+
+        for w in sequence:
+            if w not in current.children:
+                current.children[w] = Node()
+            current = current.children[w]
+        
+        current.count += 1
+    
+    def get_successors(self, sequence):
+        """
+        - returns two lists: successors (the words found after the given word) and 
+          frequencies (the number of times a successor has been seen)
+        """
+        current = self.root
+
+        for w in sequence:
+            if w not in current.children:
+                return [], []
+            current = current.children[w]
+        
+        successors = []
+        for w in current.children.keys():
+            successors.append(w)
+        
+        freqs = []
+        for w in successors:
+            freqs.append(current.children[w].count)
+        
+        return successors, freqs
+    
+    def __str__(self):
+        return str(self.root.children)
+        
 
 # CREATE MODEL 
 
 def markov_model(tokens, n=3):
     """
-    returns a nested dictionary: 
-        - keys: states (as strings)
-        - values: dictionary with next possible words as keys and probabilities as values.  
+    - n-grams are extracted from the 'tokens' list (using sliding windows)
+      and added to the trie as a sequence.
+    
+    - a TrieTree containing every observed sequence and its frequency is returned
     """
-    d = {}
+    t = TrieTree()
 
     for i in range(len(tokens)-n+1):
-        state = tuple(tokens[i:i+n-1])
-        nextword = tokens[i+n-1]
-        
-        if state not in d: 
-            d[state] = {}
+        sequence= tokens[i:i+n]
+        t.add_sequence(sequence)
 
-        if nextword in d[state]:
-            d[state][nextword] += 1
-        else: 
-            d[state][nextword] = 1
-    
-    for wordcount in d.values():
-        total = 0 
-        for num in wordcount.values():
-            total += num
-        
-        for word in wordcount: 
-            wordcount[word] = wordcount[word]/total 
-    
-    final_dict = {' '.join(key): val for key ,val in d.items()}
-    
-    return final_dict
-
+    return t
 
 
 # GENERATE TEXT 
 
+def text_generation(t, tokens, n=3, length=50): 
+    """
+    - extracts a sequence from the tokens list, 
+    - in the loop: 
+        - window shifts to the right, successors and frequencies are taken from the TrieTree, 
+          weighted random choice is computed 
+    - the loop ends if the length is reached or no successors are found 
+    - generated string is returned 
+    """
+    state_len = n-1
 
-def text_generation(m, n=3, length=50): 
-    """
-        - starting state (string) is randomly chosen 
-        - next word is chosen by weighted random choice and appended to state words
-        - starting state is adjusted so that it no longer includes the first word
-        - function loops
-        - list of state words are converted into a string and returned.
-    """
-    starting_state = random.choice(list(m))
-    state_words = starting_state.split()
+    start = random.choice(range(len(tokens) - state_len))
+    generated = tokens[start:start + state_len]
 
     for i in range(length):
-        probs = list(m[starting_state].values())
-        nextword = random.choices(list(m[starting_state]), weights=probs)[0]
-        state_words.append(nextword)
-        starting_state = ' '.join(state_words[-(n-1):])
+        state = generated[-state_len:]
+        successors, freqs = t.get_successors(state)
+
+        if not successors:
+            break 
+        
+        successor = random.choices(successors, weights=freqs)[0]
+        generated.append(successor)
     
-    return ' '.join(state_words)
+
+    return ' '.join(generated)
+
+
 
 if __name__ == '__main__':
     full_text = read_articles('data/Articles.csv')
     tokens = clean_articles(full_text)
     m = markov_model(tokens, n=3)
-    #print(m['to the'])
-
-    print(text_generation(m))
+    print(text_generation(m, tokens, n=3, length=100))
