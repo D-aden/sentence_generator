@@ -9,12 +9,33 @@ import random
 
 # READ FILE 
 
-def read_articles(path):
+def read_articles(paths):
     """returns string made up of all the articles"""
-    df = pd.read_csv(path, encoding='cp1252')
-    articles = df['Article']
-    full_text = ' '.join(articles.dropna().astype(str))
-    return full_text
+    if isinstance(paths, str):
+        paths = [paths]
+
+    entire_text = []
+
+    for p in paths: 
+        try: 
+            df = pd.read_csv(p, encoding='utf-8', sep=None, engine='python', on_bad_lines='skip') 
+        except UnicodeDecodeError: 
+            df = pd.read_csv(p, encoding='cp1252', sep=None, engine='python', on_bad_lines='skip')
+    
+        possible_names = ['article', 'content', 'text', 'body']
+
+        correct_col = None
+        for i in df.columns:
+            if i.lower() in possible_names:
+                correct_col = i 
+                break 
+
+        if correct_col is None: 
+            raise ValueError(f'No content column found in {p}')
+
+        entire_text.extend(df[correct_col].dropna().astype(str))
+
+    return ' '.join(entire_text)
 
 
 # CLEAN TEXT
@@ -113,7 +134,7 @@ def markov_model(tokens, n=3):
 
 # GENERATE TEXT 
 
-def text_generation(t, tokens, n=3, length=50): 
+def text_generation(t, tokens, n=3, sentence_length=20, num_sentences=20): 
     """
     - extracts a sequence from the tokens list, 
     - in the loop: 
@@ -122,28 +143,33 @@ def text_generation(t, tokens, n=3, length=50):
     - the loop ends if the length is reached or no successors are found 
     - generated string is returned 
     """
+    all_sentences = []
     state_len = n-1
 
-    start = random.choice(range(len(tokens) - state_len))
-    generated = tokens[start:start + state_len]
+    for i in range(num_sentences):
+        start = random.choice(range(len(tokens) - state_len))
+        generated = tokens[start:start + state_len]
 
-    for i in range(length):
-        state = generated[-state_len:]
-        successors, freqs = t.get_successors(state)
+        for i in range(sentence_length):
+            state = generated[-state_len:]
+            successors, freqs = t.get_successors(state)
 
-        if not successors:
-            break 
-        
-        successor = random.choices(successors, weights=freqs)[0]
-        generated.append(successor)
+            if not successors:
+                break 
+            
+            successor = random.choices(successors, weights=freqs)[0]
+            generated.append(successor)
     
+        all_sentences.append(' '.join(generated))
 
-    return ' '.join(generated)
+    return '. '.join(all_sentences) + '.'
 
 
 
 if __name__ == '__main__':
-    full_text = read_articles('data/Articles.csv')
+    full_text = read_articles(['data/Articles.csv', 'data/bbc-news-data.csv','data/cnn_dailymail.csv'])
+    
     tokens = clean_articles(full_text)
     m = markov_model(tokens, n=3)
-    print(text_generation(m, tokens, n=3, length=100))
+    print(text_generation(m, tokens, n=3, sentence_length=10, num_sentences=20))
+   
