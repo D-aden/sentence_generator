@@ -171,5 +171,5 @@ if __name__ == '__main__':
     
     tokens = clean_articles(full_text)
     m = markov_model(tokens, n=3)
-    print(text_generation(m, tokens, n=3, sentence_length=10, num_sentences=20))
+    print(text_generation(m, tokens, n=3, sentence_length=10, num_sentences=2))
    
