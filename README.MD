@@ -74,12 +74,13 @@ CSV files must contain a column named `article`, `content`, `text`, or `body`. E
 
 ### Unit tests
 ```
-poetry run python3 -m unittest test_main -v
+poetry run coverage run -m unittest test_main.py
 ```
  
 ### Integration tests
 ```
-poetry run python3 -m unittest integration_test -v
+poetry run coverage run -a -m unittest integration_tests.py
+
 ```
 
 ### Generate a test coverage report with:

@@ -17,7 +17,7 @@ class TestIntegration(unittest.TestCase):
 
     def test_read_to_clean_returns_tokens(self):
         """pipeline up to tokenisation returns a non-empty list of strings"""
-        text = read_articles('data/sample.csv')
+        text = read_articles('../data/sample.csv')
         tokens = clean_articles(text)
         self.assertIsInstance(tokens, list)
         self.assertTrue(len(tokens) > 0)
@@ -29,7 +29,7 @@ class TestIntegration(unittest.TestCase):
         since rows in sample.csv ends with a full stop (.)
         after cleaning 'mat.' must appear as 'mat'
         """
-        text = read_articles('data/sample.csv')
+        text = read_articles('../data/sample.csv')
         tokens = clean_articles(text)
         self.assertNotIn('mat.', tokens)
         self.assertIn('mat', tokens)
@@ -40,7 +40,7 @@ class TestIntegration(unittest.TestCase):
         which should never reach the token list 
         test ensures read_articles only pull from the content column
         """
-        text = read_articles('data/sample.csv')
+        text = read_articles('../data/sample.csv')
         tokens = clean_articles(text)
         for category_word in ['animals', 'weather', 'nature', 'people', 'transport', 'food', 'education']:
             self.assertNotIn(category_word, tokens)
@@ -50,7 +50,7 @@ class TestIntegration(unittest.TestCase):
         verify that pipeline from read_article to markov_model
         return a trietree
         """
-        text = read_articles('data/sample.csv')
+        text = read_articles('../data/sample.csv')
         tokens = clean_articles(text)
         trie = markov_model(tokens)
         self.assertIsInstance(trie, TrieTree)
@@ -62,7 +62,7 @@ class TestIntegration(unittest.TestCase):
         in the pipeline sequence read → clean → model the trie must know
         these transitions
         """
-        text = read_articles('data/sample.csv')
+        text = read_articles('../data/sample.csv')
         tokens = clean_articles(text)
         trie = markov_model(tokens, n=3)
 
@@ -74,22 +74,12 @@ class TestIntegration(unittest.TestCase):
         succs, _ = trie.get_successors(['the', 'dog'])
         self.assertIn('chased', succs)
 
-    def test_markov_to_generation(self): 
-        """
-        test that the pipeline from markov_articles to text_generation returns 
-        non-empty string
-        """
-        tokens = ['the', 'monkey', 'fell', 'off', 'the', 'tree', 'the', 'monkey', 'cried', 'and', 'the', 'monkey', 'fell', 'asleep']
-        trie = markov_model(tokens)
-        result = text_generation(trie, tokens, n=3, sentence_length=10, num_sentences=2) 
-        assert isinstance(result, str)
-        assert len(result) > 0 
     
     def test_entire_pipeline(self): 
         """
         test the entire pipeline and verify that a non-empty string is returned 
         """
-        text = read_articles('data/sample.csv')
+        text = read_articles('../data/sample.csv')
         tokens = clean_articles(text)
         trie = markov_model(tokens)
         result = text_generation(trie, tokens, n=3, sentence_length=10, num_sentences=2)
@@ -101,7 +91,7 @@ class TestIntegration(unittest.TestCase):
         test to confirm cleaning happens before model building
         the trie must only know words that come from the cleaned token list
         """
-        text = read_articles('data/sample.csv')
+        text = read_articles('../data/sample.csv')
         tokens = clean_articles(text)
         vocab = set(tokens)
         trie = markov_model(tokens, n=3)
@@ -138,7 +128,7 @@ class TestIntegration(unittest.TestCase):
         test that every word in the final output traces back to the sample CSV content column
         confirms if any stage leaks category labels or leaves punctuation attached to tokens
         """
-        text = read_articles('data/sample.csv')
+        text = read_articles('../data/sample.csv')
         tokens = clean_articles(text)
         vocab = set(tokens)
         trie = markov_model(tokens, n=3)
@@ -148,7 +138,7 @@ class TestIntegration(unittest.TestCase):
 
     def test_pipeline_is_reproducible(self):
         """same random seed must produce identical output end-to-end"""
-        text = read_articles('data/sample.csv')
+        text = read_articles('../data/sample.csv')
         tokens = clean_articles(text)
         trie = markov_model(tokens, n=3)
 

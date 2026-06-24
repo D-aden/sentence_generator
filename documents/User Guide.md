@@ -32,14 +32,19 @@ This creates and activates an isolated environment containing all required packa
 # Running Tests
 
 
-```bash
-# Unit tests
-poetry run python -m unittest test_main.py -v
+### Unit tests
+```
+poetry run coverage run -m unittest test_main.py
+```
  
-# Integration tests
-poetry run python -m unittest integration_test.py -v
+### Integration tests
+```
+poetry run coverage run -a -m unittest integration_tests.py
 
-# Generate a test coverage report with:
+```
+
+### Generate a test coverage report with:
+```
 poetry run coverage report
 ```
 

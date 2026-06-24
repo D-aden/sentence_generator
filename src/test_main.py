@@ -190,8 +190,10 @@ class TestTextGeneration(unittest.TestCase):
     def test_length_of_sentences(self):
         sentence_length = 5
         result = text_generation(self.model, self.tokens, n=3, sentence_length=sentence_length, num_sentences=5)
-        sentences = [s for s in re.split(r'\.+', result) if s.strip()]
-        pass
+        sentences = [s for s in re.split(r'\. ', result) if s.strip()]
+        for s in sentences: 
+            self.assertEqual(len(s.split()), sentence_length)
+
 
 
 

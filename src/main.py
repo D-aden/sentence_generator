@@ -150,7 +150,7 @@ def text_generation(t, tokens, n=3, sentence_length=20, num_sentences=20):
         start = random.choice(range(len(tokens) - state_len))
         generated = tokens[start:start + state_len]
 
-        for i in range(sentence_length):
+        for i in range(sentence_length-2):
             state = generated[-state_len:]
             successors, freqs = t.get_successors(state)
 
@@ -167,9 +167,9 @@ def text_generation(t, tokens, n=3, sentence_length=20, num_sentences=20):
 
 
 if __name__ == '__main__':
-    full_text = read_articles(['data/Articles.csv', 'data/bbc-news-data.csv','data/cnn_dailymail.csv'])
+    full_text = read_articles(['../data/Articles.csv', '../data/bbc-news-data.csv','../data/cnn_dailymail.csv'])
     
     tokens = clean_articles(full_text)
     m = markov_model(tokens, n=3)
-    print(text_generation(m, tokens, n=3, sentence_length=10, num_sentences=2))
+    print(text_generation(m, tokens, n=3, sentence_length=4, num_sentences=2))
    
