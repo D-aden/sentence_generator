@@ -63,11 +63,11 @@ python3 gui.py
 ### Parameters
  
 | Parameter | Description | Default |
-||||
+|-----------|-------------|---------|
 | N-gram Order | The number of previous words used to predict the next word. Higher values produce more coherent text but require a larger dataset. | 2 |
-| Sentence Length | Sets the number of words in each generated sentence.| 15 |
+| Sentence Length | Sets the number of words in each generated sentence. | 15 |
 | Number of Sentences | Sets the total number of sentences to generate. | 5 |
- 
+
 
  
 ## Running Tests
