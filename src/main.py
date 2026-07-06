@@ -10,13 +10,18 @@ import random
 # READ FILE 
 
 def read_articles(paths):
-    """returns string made up of all the articles"""
+    """
+    Read one or more CSV files and combines the content in their 'article' column into one long string. 
+    Parameters: list of one of more file paths
+    Returns: one large string made up of all the articles concatenated together 
+    """
     if isinstance(paths, str):
         paths = [paths]
 
     entire_text = []
 
     for p in paths: 
+        # file read using UTF-8 encoding, if that fails, read with cp1252 
         try: 
             df = pd.read_csv(p, encoding='utf-8', sep=None, engine='python', on_bad_lines='skip') 
         except UnicodeDecodeError: 
@@ -24,17 +29,20 @@ def read_articles(paths):
     
         possible_names = ['article', 'content', 'text', 'body']
 
+        # determine if the dataset has one of the approved columns names 
         correct_col = None
         for i in df.columns:
             if i.lower() in possible_names:
                 correct_col = i 
                 break 
-
+        # raise ValueError if no column is found
         if correct_col is None: 
             raise ValueError(f'No content column found in {p}')
 
+        # remove missing values and make sure it's a string  
         entire_text.extend(df[correct_col].dropna().astype(str))
 
+    # combine all articles into one long string 
     return ' '.join(entire_text)
 
 
@@ -42,68 +50,95 @@ def read_articles(paths):
 
 def clean_articles(text):
     """
-    steps: 
-        - converts text to lowercase, removes html tags, removes urls, only allows certain characters, 
-          fixes internal whitespace, removes leading and trailing whitespace
-    
-    returns a list of tokens
+    Cleans and tokenises article text to be used to build the Markov model. 
+    Parameter: a string of combined articles. 
+    Returns: a list of lists where each list is a tokenised sentence. 
     """
+    # text is lowercased 
     text = text.lower()
-    text = re.sub(r'<[^>]+>', ' ', text)
-    text = re.sub(r'http\S+', ' ', text)
-    text = re.sub(r'[^a-z0-9\s]', ' ', text)
-    text = re.sub(r'\s+', ' ', text)
-    text = text.strip()
-    tokens = text.split()
+    # HTML tags are removed
+    text = re.sub(r'<[^>]+>', ' ', text) 
+    # URLs are removed, but the puntuation at the end is kept 
+    text = re.sub(r'http\S+?(?=[.!?]*(?:\s|$))', ' ', text)
+
+    # text is split into sentences based on the following punctuation '.!?'
+    sentences = re.split(r'[.!?]+', text)
+
+    tokens = []
+
+    for s in sentences:
+        # any characters that aren't letters, digit, whitespace or apostraphes are removed 
+        s = re.sub(r"[^a-z0-9\s'’]", ' ', s)
+        # multiple whitespaces are made into one 
+        s = re.sub(r'\s+', ' ', s)
+        # leading and trailing whitespace is removed 
+        s = s.strip()
+        # non-empty sentences are split into tokens 
+        if s:
+            tokens.append(s.split())
 
     return tokens
 
 # CREATE NODE AND TRIE CLASS
 
 class Node: 
+    """
+    Serves as a single node in the trie tree structure.
+    Attributes: 
+        children: dictionary that links each word of a sequence to its successors
+        count: integer that shows how many times a node was at the end of a sequence
+    """
     def __init__(self):
-        """
-        - self.children links each word of a sequence to a possible successor
-        - self.count shows how many times a node was at the end of a sequence
-        """
         self.children = {}
         self.count = 0
 
 class TrieTree: 
+    """
+    A trie tree structure that stores word sequences and is used 
+    to find successors of a given sequence. 
+    """
     def __init__(self):
+        # empty trie tree with a single root node created
         self.root = Node()
     
     def add_sequence(self, sequence): 
         """
-        - adds sequences to the trie, one word at a time 
-        - creates new nodes for unseen words
-        - increments the count at the last node of a sequence (then means that the sequence has been seen)
+        Adds sequence to the trie, one word at a time. 
+        Parameter: a sequence of words in the form of a list of strings 
         """
         current = self.root 
 
         for w in sequence:
             if w not in current.children:
+                # creates new nodes for unseen words
                 current.children[w] = Node()
             current = current.children[w]
-        
+        # increments the count at the last node of a sequence (showing that the sequence has been seen)
         current.count += 1
     
     def get_successors(self, sequence):
         """
-        - returns two lists: successors (the words found after the given word) and 
-          frequencies (the number of times a successor has been seen)
+        Finds possible successors of a given sequence. 
+        Parameter: a sequence of words in the form of a list of strings 
+        Returns: a tuple made up of two lists: 
+            successors: the words found after the given sequence 
+            frequencies the number of times a successor has been seen
+        If a sequence is not found in the trie, two empty lists are returned.
         """
         current = self.root
 
         for w in sequence:
             if w not in current.children:
+                # sequence not found in trie --> empty lists returned 
                 return [], []
             current = current.children[w]
         
+        #at the final node, all the successors are placed in a list 
         successors = []
         for w in current.children.keys():
             successors.append(w)
         
+        # the corresponding frequencies for each successor is placed in a lisr 
         freqs = []
         for w in successors:
             freqs.append(current.children[w].count)
@@ -111,56 +146,109 @@ class TrieTree:
         return successors, freqs
     
     def __str__(self):
-        return str(self.root.children)
+        """
+        Illustrates the contents of the trie. 
+        Returns: list of up to ten sequences with their corresponding frequencies (i.e 'Hi there (2)')
+        """
+        sequences = []
+
+        def dfs(node, path):
+            # search ends after 10 sequences 
+            if len(sequences)>=10:
+                return 
+            # if an observed sequence is reached (count>0), add to return 
+            if node.count > 0: 
+                sequences.append((' '.join(path), node.count))
+            # continue process with children 
+            for wrd, child in node.children.items():
+                dfs(child, path+[wrd])
+        
+        dfs(self.root, [])
+
+        return '\n'.join(f'{seq} ({count})' for seq, count in sequences)
         
 
 # CREATE MODEL 
 
-def markov_model(tokens, n=3):
+def markov_model(sentences, n=3):
     """
-    - n-grams are extracted from the 'tokens' list (using sliding windows)
-      and added to the trie as a sequence.
-    
-    - a TrieTree containing every observed sequence and its frequency is returned
+    Builds a Markov model from a list of tokenised sentences. 
+    Parameters: tokenised sentences in the form of a list of lists of strings. 
+    Returns: a TrieTree containing every observed sequence and its frequency. 
     """
     t = TrieTree()
 
-    for i in range(len(tokens)-n+1):
-        sequence= tokens[i:i+n]
-        t.add_sequence(sequence)
+    for s in sentences:
+        # skip sentences that are too short to form a n-gram
+        if len(s)<n:
+            continue 
+        # slide a window of size n across the sentence, and add each n-gram to the trie
+        for i in range(len(s)-n+1):
+            sequence= s[i:i+n]
+            t.add_sequence(sequence)
 
     return t
 
 
 # GENERATE TEXT 
 
-def text_generation(t, tokens, n=3, sentence_length=20, num_sentences=20): 
+def text_generation(t, sentences, n=3, sentence_length=20, num_sentences=20): 
     """
-    - extracts a sequence from the tokens list, 
-    - in the loop: 
-        - window shifts to the right, successors and frequencies are taken from the TrieTree, 
-          weighted random choice is computed 
-    - the loop ends if the length is reached or no successors are found 
-    - generated string is returned 
+    Generates new text using the built Markov model. 
+    Parameters: 
+        t: the Markov model as a TrieTree, 
+        sentences: tokenised sentences in the form of a list of lists of strings
+        n: the n-gram order used to build the Markov model
+        sentence_length: the number of words in the sentence 
+        num_sentences: the number of sentences in the text
+    Returns: the generated text with sentences separated with fullstops. 
     """
     all_sentences = []
     state_len = n-1
 
+    # only sentences longer than the state length is chosen 
+    valid_sentences = [s for s in sentences if len(s) > state_len]
+
+    if not valid_sentences:
+            return ''
+
     for i in range(num_sentences):
-        start = random.choice(range(len(tokens) - state_len))
-        generated = tokens[start:start + state_len]
+        attempts = 0
+        generated = None 
 
-        for i in range(sentence_length-2):
-            state = generated[-state_len:]
-            successors, freqs = t.get_successors(state)
+        # limit of 100 attempts are given to generate a sentence 
+        while attempts < 100: 
+            attempts += 1 
 
-            if not successors:
+            # a sentence is randomly selected from the approved sentences 
+            source_sentence = random.choice(valid_sentences)
+            # starting index is chosen at random, room left for a full n-gram
+            start = random.choice(range(len(source_sentence) - state_len))
+            # initial state is chosen (words of state_len length)
+            current = source_sentence[start:start + state_len]
+
+            # loop continues until sentence reaches desired length 
+            while len(current) < sentence_length:
+                # the last state_len words are chosen as the current state 
+                state = current[-state_len:]
+                # the successors of this sequence is found + their frequencies 
+                successors, freqs = t.get_successors(state)
+
+                if not successors:
+                    break 
+                
+                # a successor is chosen based on its frequency 
+                successor = random.choices(successors, weights=freqs)[0]
+                # word is added to the sequnce 
+                current.append(successor)
+
+            # the attempt is only seen as successful if the desired length is reched 
+            if len(current) == sentence_length:
+                generated = current 
                 break 
-            
-            successor = random.choices(successors, weights=freqs)[0]
-            generated.append(successor)
-    
-        all_sentences.append(' '.join(generated))
+
+        if generated is not None:     
+            all_sentences.append(' '.join(generated).capitalize())
 
     return '. '.join(all_sentences) + '.'
 
@@ -170,6 +258,6 @@ if __name__ == '__main__':
     full_text = read_articles(['../data/Articles.csv', '../data/bbc-news-data.csv','../data/cnn_dailymail.csv'])
     
     tokens = clean_articles(full_text)
-    m = markov_model(tokens, n=3)
-    print(text_generation(m, tokens, n=3, sentence_length=4, num_sentences=2))
-   
+    m = markov_model(tokens, n=2)
+    print(text_generation(m, tokens, n=2, sentence_length=10, num_sentences=20))
+

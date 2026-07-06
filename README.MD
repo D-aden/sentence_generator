@@ -1,9 +1,9 @@
-Readme · MD
+
 # Markov Chain Text Generator
  
 An application that reads articles from CSV files, builds an n-gram Markov model, and generates new text by sampling from that model.
  
----
+
 ## Documents 
 [Specification Document](./documents/Specification%20Document.md)
 
@@ -34,6 +34,7 @@ Before running the application, ensure that Python and Poetry are installed on y
  
 ```
 git clone https://github.com/D-aden/sentence_generator
+
 cd sentence_generator
 ```
  
@@ -41,10 +42,11 @@ cd sentence_generator
  
 ```
 poetry install
+
 poetry shell
 ```
  
----
+
  
 ## Running the Application
  
@@ -55,19 +57,18 @@ python3 gui.py
 ### Generating Text
  
 1. Click **Generate Text**.
-2. Select one or more CSV files from the file dialogue.
-3. The application reads the article content, builds the model, and displays the generated text in the output area.
-CSV files must contain a column named `article`, `content`, `text`, or `body`. Each row in that column is treated as one article. Any other columns are ignored.
+2. Select one or more CSV files from the file dialog.
+3. The application reads the article content, builds the model, and displays the generated text in the output area. CSV files must contain a column named `article`, `content`, `text`, or `body`. Each row in that column is treated as one article. Any other columns are ignored. Keep in mind that if a word has no successor, the model will attempt to start to generate a new sentence, however the number of attempts for regeneration has a **limit of 100**. 
  
 ### Parameters
  
 | Parameter | Description | Default |
-|---|---|---|
-| N-gram Order | The number of preceding words used to predict the next word. Higher values produce more coherent text but require a larger dataset. | 2 |
-| Sentence Length | The maximum number of words per generated sentence. | 15 |
-| Number of Sentences | The total number of sentences to generate. | 5 |
+||||
+| N-gram Order | The number of previous words used to predict the next word. Higher values produce more coherent text but require a larger dataset. | 2 |
+| Sentence Length | Sets the number of words in each generated sentence.| 15 |
+| Number of Sentences | Sets the total number of sentences to generate. | 5 |
  
----
+
  
 ## Running Tests
  
@@ -80,7 +81,6 @@ poetry run coverage run -m unittest test_main.py
 ### Integration tests
 ```
 poetry run coverage run -a -m unittest integration_tests.py
-
 ```
 
 ### Generate a test coverage report with:

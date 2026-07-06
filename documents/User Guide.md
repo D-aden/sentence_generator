@@ -29,7 +29,7 @@ This creates and activates an isolated environment containing all required packa
 
 ---
 
-# Running Tests
+## Running Tests (be sure to navigate to the 'src' directory)
 
 
 ### Unit tests
@@ -40,7 +40,6 @@ poetry run coverage run -m unittest test_main.py
 ### Integration tests
 ```
 poetry run coverage run -a -m unittest integration_tests.py
-
 ```
 
 ### Generate a test coverage report with:
@@ -50,7 +49,7 @@ poetry run coverage report
 
 ---
 
-# Running the Application
+## Running the Application
 
 Launch the application with:
 
@@ -58,30 +57,35 @@ Launch the application with:
 python3 gui.py
 ```
 
-## Application Settings
+### Application Settings
 
-### N-gram Order
+#### N-gram Order:
 
-Controls how many previous words are used to predict the next word. Higher values generally produce more coherent and natural-looking text.
+- Controls how many previous words are used to predict the next word. Higher values generally produce more coherent and natural-looking text.
 
-### Sentence Length
+#### Sentence Length:
 
-Sets the number of words in each generated sentence.
+- Sets the number of words in each generated sentence.
 
-### Number of Sentences
+#### Number of Sentences:
 
-Sets the total number of sentences to generate.
+- Sets the total number of sentences to generate.
 
-## Generating Text
+### Generating Text
+
+<img src= '../data/generator_image.png' width='400' alt='generator image'>
 
 1. Click **Generate Text**.
-2. Select one or more CSV files from the file dialogue.
+2. Select one or more CSV files from the file dialog.
+
+<img src= '../data/filedialog_image.png' width='400' alt='file dialog image'>
+
 3. The application reads the article content, builds the model, and displays the generated text in the output area.
-CSV files must contain a column named `article`, `content`, `text`, or `body`. Each row in that column is treated as one article. Any other columns are ignored.
+CSV files must contain a column named `article`, `content`, `text`, or `body`. Each row in that column is treated as one article. Any other columns are ignored. Keep in mind that if a word has no successor, the model will attempt to start to generate a new sentence, however the number of attempts for regeneration has a **limit of 100**. 
 
 ---
 
-# Troubleshooting
+## Troubleshooting
 
 ### No Text Is Generated
 
@@ -92,7 +96,7 @@ CSV files must contain a column named `article`, `content`, `text`, or `body`. E
 
 - Try increasing the N-gram order (e.g., 3–5).
 - Use a larger dataset to improve text quality.
-
+  
 ### Application Crashes or Produces Errors
 
 - Check that all input values are valid integers.

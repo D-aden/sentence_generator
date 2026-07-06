@@ -75,32 +75,67 @@ class TestReadArticles(unittest.TestCase):
 # TEST CLEAN ARTICLES 
 class TestCleanArticles(unittest.TestCase):
 
-    def test_lowercase(self): 
-        assert clean_articles('Hello There') == ['hello', 'there']
+    def test_lowercase(self):
+        text = 'Hello There. Lets See If All The Words Are Lowercase'
+        assert clean_articles(text) == [['hello', 'there'], ['lets', 'see', 'if', 'all', 'the', 'words', 'are', 'lowercase']]
     
     def test_remove_html(self): 
-        assert clean_articles('<p>smile</p>') == ['smile']
+        text = """
+        <html>
+        <body>
+        <h1>Breaking News</h1>
+        <p>Scientists discover a new species in the rainforest.</p>
+        <p>The finding has attracted worldwide attention.</p>
+        </body>
+        </html>
+        """
+        
+        assert clean_articles(text) == [
+        ['breaking', 'news',
+        'scientists', 'discover', 'a', 'new',
+        'species', 'in', 'the', 'rainforest'],
+        ['the', 'finding', 'has', 'attracted',
+        'worldwide', 'attention']
+        ]
+
     
     def test_remove_urls(self): 
-        result = clean_articles('see https://something.com for more')
-        assert 'https://something.com' not in result 
-        assert result == ['see', 'for', 'more']
+        text = """
+        Read the full report at https://example.com/report.
+        More details are available at https://news.org/article.
+        Researchers say the results are promising and deserve
+        further investigation.
+        """
+        assert clean_articles(text) ==  [
+            ['read', 'the', 'full', 'report', 'at'],
+            ['more', 'details', 'are', 'available', 'at'],
+            ['researchers', 'say', 'the', 'results', 'are',
+            'promising', 'and', 'deserve', 'further',
+            'investigation']]
+   
 
     def test_allowed_characters(self): 
-        result = clean_articles('hi! how are you?')
-        assert result == ['hi', 'how', 'are', 'you']
+        result = clean_articles("""
+        Wow!!! How’re you today???
+        This article... contains lots of punctuation,
+        commas, periods, and exclamation marks!!!
+        """
+        )
 
-    def test_returns_list(self):
-        result = clean_articles('hello world')
-        self.assertIsInstance(result, list)
+        assert result == [
+        ['wow'], ['how’re', 'you', 'today'],
+        ['this', 'article'], ['contains', 'lots',
+        'of', 'punctuation', 'commas', 'periods',
+        'and', 'exclamation', 'marks']
+        ]
 
     def test_numbers_remain(self): 
         result = clean_articles('there are 4 apples')
-        assert '4' in result 
+        assert result == [['there', 'are', '4', 'apples']] 
     
     def test_whitespace_removed(self):
         result = clean_articles('there   are    spaces')
-        assert result == ['there', 'are', 'spaces']
+        assert result == [['there', 'are', 'spaces']]
     
     def test_edge_cases(self):
         """check that punctuation and empty strings are handles"""
@@ -150,9 +185,33 @@ class TestTrieTree(unittest.TestCase):
         successors, freqs = self.trie.get_successors(['a', 'b', 'c'])
         self.assertEqual(successors, [])
 
+    #test __str__ 
+    def test_str_duplicates(self):
+        self.trie.add_sequence(['a', 'b', 'c'])
+        self.trie.add_sequence(['a', 'b', 'c'])
+
+        result= str(self.trie)
+
+        self.assertIn('a b c (2)', result)
+    
+    def test_str_end_frequencies(self):
+        self.trie.add_sequence(['a', 'b', 'c'])
+        self.trie.add_sequence(['a', 'b'])
+
+        result= str(self.trie)
+
+        self.assertIn('a b c (1)', result)
+        self.assertIn('a b (1)', result)
+
+    def test_str_limit(self):
+        for i in range(15):
+            self.trie.add_sequence([f'word{i}'])
+        result=str(self.trie)
+        self.assertEqual(result.count('\n'), 9)
+
 class TestMarkovModel(unittest.TestCase):
     def setUp(self):
-        self.tokens = ['the', 'monkey', 'fell', 'off', 'the', 'tree', 'the', 'monkey', 'cried', 'and', 'the', 'monkey', 'fell', 'asleep']
+        self.tokens = [['the', 'monkey', 'fell', 'off', 'the', 'tree'], ['the', 'monkey', 'cried', 'and', 'the', 'monkey', 'fell', 'asleep']]
 
     def test_returns_trie(self):
         model = markov_model(self.tokens, n=3)
@@ -167,29 +226,29 @@ class TestMarkovModel(unittest.TestCase):
 
 class TestTextGeneration(unittest.TestCase):
     def setUp(self):
-        self.tokens = ['the', 'monkey', 'fell', 'off', 'the', 'tree', 'the', 'monkey', 'cried', 'and', 'the', 'monkey', 'fell', 'asleep']
-        self.model = markov_model(self.tokens, n=3)
+        self.tokens = [['the', 'monkey', 'fell', 'off', 'the', 'tree', 'the', 'monkey', 'cried', 'and', 'the', 'monkey', 'fell', 'asleep']]
+        self.model = markov_model(self.tokens, n=4)
 
     
     def test_return_string(self):
-        result = text_generation(self.model, self.tokens, n=3, sentence_length=10, num_sentences=3)
+        result = text_generation(self.model, self.tokens, n=4, sentence_length=10, num_sentences=3)
         self.assertIsInstance(result, str)
 
     
     def test_output_not_empty(self):
-        result = text_generation(self.model, self.tokens, n=3, sentence_length=10, num_sentences=3)
+        result = text_generation(self.model, self.tokens, n=4, sentence_length=10, num_sentences=3)
         self.assertTrue(len(result)>0)
         
     
     def test_number_of_sentences(self):
         num_sentences = 5
-        result = text_generation(self.model, self.tokens, n=3, sentence_length=10, num_sentences=num_sentences)
+        result = text_generation(self.model, self.tokens, n=4, sentence_length=10, num_sentences=num_sentences)
         lst = re.split(r'\. ', result.strip())
         self.assertEqual(len(lst), num_sentences)
     
     def test_length_of_sentences(self):
         sentence_length = 5
-        result = text_generation(self.model, self.tokens, n=3, sentence_length=sentence_length, num_sentences=5)
+        result = text_generation(self.model, self.tokens, n=4, sentence_length=sentence_length, num_sentences=5)
         sentences = [s for s in re.split(r'\. ', result) if s.strip()]
         for s in sentences: 
             self.assertEqual(len(s.split()), sentence_length)
