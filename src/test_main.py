@@ -9,8 +9,6 @@ import pandas as pd
 import os 
 import re
 
-# TEST READ ARTICLES 
-
 class TestReadArticles(unittest.TestCase): 
     def setUp(self):
         self.f1 = 'testcase1.csv'
@@ -47,10 +45,10 @@ class TestReadArticles(unittest.TestCase):
     def test_column_names(self): 
         other_names = ['content', 'text', 'body']
 
-        for i in other_names: 
+        for name in other_names: 
             path = 'test_names.csv'
             try: 
-                pd.DataFrame({i: ['Hi there'], 'id': [1]}).to_csv(path, index=False)
+                pd.DataFrame({name: ['Hi there'], 'id': [1]}).to_csv(path, index=False)
                 result = read_articles(path)
                 self.assertIn('Hi there', result)
             finally:
@@ -72,12 +70,12 @@ class TestReadArticles(unittest.TestCase):
                 os.remove(path)
 
 
-# TEST CLEAN ARTICLES 
 class TestCleanArticles(unittest.TestCase):
 
     def test_lowercase(self):
         text = 'Hello There. Lets See If All The Words Are Lowercase'
-        assert clean_articles(text) == [['hello', 'there'], ['lets', 'see', 'if', 'all', 'the', 'words', 'are', 'lowercase']]
+        result = [['hello', 'there'], ['lets', 'see', 'if', 'all', 'the', 'words', 'are', 'lowercase']]
+        self.assertEqual(clean_articles(text), result)
     
     def test_remove_html(self): 
         text = """
@@ -90,13 +88,14 @@ class TestCleanArticles(unittest.TestCase):
         </html>
         """
         
-        assert clean_articles(text) == [
+        result = [
         ['breaking', 'news',
         'scientists', 'discover', 'a', 'new',
         'species', 'in', 'the', 'rainforest'],
         ['the', 'finding', 'has', 'attracted',
         'worldwide', 'attention']
         ]
+        self.assertEqual(clean_articles(text), result)
 
     
     def test_remove_urls(self): 
@@ -106,41 +105,54 @@ class TestCleanArticles(unittest.TestCase):
         Researchers say the results are promising and deserve
         further investigation.
         """
-        assert clean_articles(text) ==  [
+        result = [
             ['read', 'the', 'full', 'report', 'at'],
             ['more', 'details', 'are', 'available', 'at'],
             ['researchers', 'say', 'the', 'results', 'are',
             'promising', 'and', 'deserve', 'further',
             'investigation']]
    
+        self.assertEqual(clean_articles(text), result)
 
-    def test_allowed_characters(self): 
-        result = clean_articles("""
+   
+
+    def test_allowed_characters(self):
+        text =  """
         Wow!!! How’re you today???
         This article... contains lots of punctuation,
         commas, periods, and exclamation marks!!!
         """
-        )
 
-        assert result == [
+        result = [
         ['wow'], ['how’re', 'you', 'today'],
         ['this', 'article'], ['contains', 'lots',
         'of', 'punctuation', 'commas', 'periods',
         'and', 'exclamation', 'marks']
         ]
 
+        self.assertEqual(clean_articles(text), result)
+
     def test_numbers_remain(self): 
-        result = clean_articles('there are 4 apples')
-        assert result == [['there', 'are', '4', 'apples']] 
+        text = 'there are 4 apples'
+        result = [['there', 'are', '4', 'apples']] 
+        self.assertEqual(clean_articles(text), result)
     
     def test_whitespace_removed(self):
-        result = clean_articles('there   are    spaces')
-        assert result == [['there', 'are', 'spaces']]
+        text = 'there   are    spaces' 
+        result = [['there', 'are', 'spaces']]
+        self.assertEqual(clean_articles(text), result)
+    
     
     def test_edge_cases(self):
-        """check that punctuation and empty strings are handles"""
-        assert clean_articles('') == []
-        assert clean_articles('!!???...,,') == []
+        #check that punctuation and empty strings are handles
+        text = ''
+        result = []
+        self.assertEqual(clean_articles(text), result)
+
+        text = '!!???...,,'
+        result = []
+        self.assertEqual(clean_articles(text), result)
+     
 
 class TestNode(unittest.TestCase):
     def test_zero_at_start(self):
@@ -160,12 +172,12 @@ class TestTrieTree(unittest.TestCase):
     def setUp(self):
         self.trie = TrieTree()
     
-    def test_sequence_retrieval(self):
+    def test_single_successors(self):
         self.trie.add_sequence(['a', 'b', 'c'])
         successors, freqs = self.trie.get_successors(['a', 'b'])
         self.assertIn('c', successors)
-        
-        """check multiple successors case"""
+
+    def test_multiple_succcesors(self):
         self.trie.add_sequence(['a', 'b', 'c'])
         self.trie.add_sequence(['a', 'b', 'd'])
         successors, freqs = self.trie.get_successors(['a', 'b'])
@@ -180,12 +192,12 @@ class TestTrieTree(unittest.TestCase):
         self.assertEqual(freqs[index], 2)
     
     def test_branch_end(self):
-        """a case with no children should return empty"""
+        #a case with no children should return empty"""
         self.trie.add_sequence(['a', 'b', 'c'])
         successors, freqs = self.trie.get_successors(['a', 'b', 'c'])
         self.assertEqual(successors, [])
 
-    #test __str__ 
+    #test __str__()
     def test_str_duplicates(self):
         self.trie.add_sequence(['a', 'b', 'c'])
         self.trie.add_sequence(['a', 'b', 'c'])
@@ -194,7 +206,7 @@ class TestTrieTree(unittest.TestCase):
 
         self.assertIn('a b c (2)', result)
     
-    def test_str_end_frequencies(self):
+    def test_str_recognises_prefix_strings(self):
         self.trie.add_sequence(['a', 'b', 'c'])
         self.trie.add_sequence(['a', 'b'])
 
@@ -211,7 +223,8 @@ class TestTrieTree(unittest.TestCase):
 
 class TestMarkovModel(unittest.TestCase):
     def setUp(self):
-        self.tokens = [['the', 'monkey', 'fell', 'off', 'the', 'tree'], ['the', 'monkey', 'cried', 'and', 'the', 'monkey', 'fell', 'asleep']]
+        self.tokens = [['the', 'monkey', 'fell', 'off', 'the', 'tree'], 
+        ['the', 'monkey', 'cried', 'and', 'the', 'monkey', 'fell', 'asleep']]
 
     def test_returns_trie(self):
         model = markov_model(self.tokens, n=3)
@@ -243,8 +256,8 @@ class TestTextGeneration(unittest.TestCase):
     def test_number_of_sentences(self):
         num_sentences = 5
         result = text_generation(self.model, self.tokens, n=4, sentence_length=10, num_sentences=num_sentences)
-        lst = re.split(r'\. ', result.strip())
-        self.assertEqual(len(lst), num_sentences)
+        sentences = re.split(r'\. ', result.strip())
+        self.assertEqual(len(sentences), num_sentences)
     
     def test_length_of_sentences(self):
         sentence_length = 5

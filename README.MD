@@ -69,9 +69,8 @@ python3 gui.py
 | Number of Sentences | Sets the total number of sentences to generate. | 5 |
 
 
- 
-## Running Tests
- 
+## Running Tests (All commands must be run from the src directory)
+
 
 ### Unit tests
 ```

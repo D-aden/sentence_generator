@@ -1,6 +1,6 @@
 """
 Markov Chain Text Generator 
-- reads news articles, creates an n-gram Markov model and produces new text
+    Reads news articles, creates an n-gram Markov model and generates new text
 """
 
 import pandas as pd 
@@ -11,21 +11,23 @@ import random
 
 def read_articles(paths):
     """
-    Read one or more CSV files and combines the content in their 'article' column into one long string. 
-    Parameters: list of one of more file paths
-    Returns: one large string made up of all the articles concatenated together 
+    Read one or more CSV files and combines the content in their 'article/content/text/body' column into one long string. 
+    Parameters: 
+        list of one of more file paths
+    Returns: 
+        one large string made up of all the articles concatenated together 
     """
     if isinstance(paths, str):
         paths = [paths]
 
     entire_text = []
 
-    for p in paths: 
+    for path in paths: 
         # file read using UTF-8 encoding, if that fails, read with cp1252 
         try: 
-            df = pd.read_csv(p, encoding='utf-8', sep=None, engine='python', on_bad_lines='skip') 
+            df = pd.read_csv(path, encoding='utf-8', sep=None, engine='python', on_bad_lines='skip') 
         except UnicodeDecodeError: 
-            df = pd.read_csv(p, encoding='cp1252', sep=None, engine='python', on_bad_lines='skip')
+            df = pd.read_csv(path, encoding='cp1252', sep=None, engine='python', on_bad_lines='skip')
     
         possible_names = ['article', 'content', 'text', 'body']
 
@@ -37,9 +39,9 @@ def read_articles(paths):
                 break 
         # raise ValueError if no column is found
         if correct_col is None: 
-            raise ValueError(f'No content column found in {p}')
+            raise ValueError(f'No content column found in {path}')
 
-        # remove missing values and make sure it's a string  
+        # remove missing values and convert to string  
         entire_text.extend(df[correct_col].dropna().astype(str))
 
     # combine all articles into one long string 
@@ -51,8 +53,10 @@ def read_articles(paths):
 def clean_articles(text):
     """
     Cleans and tokenises article text to be used to build the Markov model. 
-    Parameter: a string of combined articles. 
-    Returns: a list of lists where each list is a tokenised sentence. 
+    Parameters: 
+        a string of combined articles. 
+    Returns: 
+        a list of lists where each list is a tokenised sentence. 
     """
     # text is lowercased 
     text = text.lower()
@@ -66,16 +70,16 @@ def clean_articles(text):
 
     tokens = []
 
-    for s in sentences:
-        # any characters that aren't letters, digit, whitespace or apostraphes are removed 
-        s = re.sub(r"[^a-z0-9\s'’]", ' ', s)
+    for sentence in sentences:
+        # any characters that aren't letters, digit, whitespace or apostrophes are removed 
+        sentence = re.sub(r"[^a-z0-9\s'’]", ' ', sentence)
         # multiple whitespaces are made into one 
-        s = re.sub(r'\s+', ' ', s)
+        sentence = re.sub(r'\s+', ' ', sentence) 
         # leading and trailing whitespace is removed 
-        s = s.strip()
+        sentence = sentence.strip()
         # non-empty sentences are split into tokens 
-        if s:
-            tokens.append(s.split())
+        if sentence:
+            tokens.append(sentence.split())
 
     return tokens
 
@@ -104,22 +108,24 @@ class TrieTree:
     def add_sequence(self, sequence): 
         """
         Adds sequence to the trie, one word at a time. 
-        Parameter: a sequence of words in the form of a list of strings 
+        Parameters: 
+            a sequence of words in the form of a list of strings 
         """
         current = self.root 
 
-        for w in sequence:
-            if w not in current.children:
+        for word in sequence:
+            if word not in current.children:
                 # creates new nodes for unseen words
-                current.children[w] = Node()
-            current = current.children[w]
+                current.children[word] = Node()
+            current = current.children[word]
         # increments the count at the last node of a sequence (showing that the sequence has been seen)
         current.count += 1
     
     def get_successors(self, sequence):
         """
         Finds possible successors of a given sequence. 
-        Parameter: a sequence of words in the form of a list of strings 
+        Parameters: 
+            a sequence of words in the form of a list of strings 
         Returns: a tuple made up of two lists: 
             successors: the words found after the given sequence 
             frequencies the number of times a successor has been seen
@@ -127,28 +133,29 @@ class TrieTree:
         """
         current = self.root
 
-        for w in sequence:
-            if w not in current.children:
+        for word in sequence:
+            if word not in current.children:
                 # sequence not found in trie --> empty lists returned 
                 return [], []
-            current = current.children[w]
+            current = current.children[word]
         
         #at the final node, all the successors are placed in a list 
         successors = []
-        for w in current.children.keys():
-            successors.append(w)
+        for word in current.children.keys():
+            successors.append(word)
         
-        # the corresponding frequencies for each successor is placed in a lisr 
+        # the corresponding frequencies for each successor are placed in a list 
         freqs = []
-        for w in successors:
-            freqs.append(current.children[w].count)
+        for word in successors:
+            freqs.append(current.children[word].count)
         
         return successors, freqs
     
     def __str__(self):
         """
         Illustrates the contents of the trie. 
-        Returns: list of up to ten sequences with their corresponding frequencies (i.e 'Hi there (2)')
+        Returns: 
+            new-line-joined string of up to ten sequences with their corresponding frequencies (i.e 'Hi there (2)')
         """
         sequences = []
 
@@ -160,8 +167,8 @@ class TrieTree:
             if node.count > 0: 
                 sequences.append((' '.join(path), node.count))
             # continue process with children 
-            for wrd, child in node.children.items():
-                dfs(child, path+[wrd])
+            for word, child in node.children.items():
+                dfs(child, path+[word])
         
         dfs(self.root, [])
 
@@ -173,35 +180,39 @@ class TrieTree:
 def markov_model(sentences, n=3):
     """
     Builds a Markov model from a list of tokenised sentences. 
-    Parameters: tokenised sentences in the form of a list of lists of strings. 
-    Returns: a TrieTree containing every observed sequence and its frequency. 
+    Parameters: 
+        tokenised sentences in the form of a list of lists of strings. 
+        n: the n-gram order
+    Returns: 
+        a TrieTree containing every observed sequence and its frequency. 
     """
-    t = TrieTree()
+    model = TrieTree()
 
-    for s in sentences:
+    for sentence in sentences:
         # skip sentences that are too short to form a n-gram
-        if len(s)<n:
+        if len(sentence)<n:
             continue 
         # slide a window of size n across the sentence, and add each n-gram to the trie
-        for i in range(len(s)-n+1):
-            sequence= s[i:i+n]
-            t.add_sequence(sequence)
+        for i in range(len(sentence)-n+1):
+            sequence = sentence[i:i+n]
+            model.add_sequence(sequence)
 
-    return t
+    return model
 
 
 # GENERATE TEXT 
 
-def text_generation(t, sentences, n=3, sentence_length=20, num_sentences=20): 
+def text_generation(model, sentences, n=3, sentence_length=20, num_sentences=20): 
     """
     Generates new text using the built Markov model. 
     Parameters: 
-        t: the Markov model as a TrieTree, 
+        model: the Markov model as a TrieTree, 
         sentences: tokenised sentences in the form of a list of lists of strings
         n: the n-gram order used to build the Markov model
         sentence_length: the number of words in the sentence 
         num_sentences: the number of sentences in the text
-    Returns: the generated text with sentences separated with fullstops. 
+    Returns: 
+        the generated text with sentences separated with fullstops. 
     """
     all_sentences = []
     state_len = n-1
@@ -222,7 +233,7 @@ def text_generation(t, sentences, n=3, sentence_length=20, num_sentences=20):
 
             # a sentence is randomly selected from the approved sentences 
             source_sentence = random.choice(valid_sentences)
-            # starting index is chosen at random, room left for a full n-gram
+            # starting index is chosen at random, room left for a state
             start = random.choice(range(len(source_sentence) - state_len))
             # initial state is chosen (words of state_len length)
             current = source_sentence[start:start + state_len]
@@ -232,7 +243,7 @@ def text_generation(t, sentences, n=3, sentence_length=20, num_sentences=20):
                 # the last state_len words are chosen as the current state 
                 state = current[-state_len:]
                 # the successors of this sequence is found + their frequencies 
-                successors, freqs = t.get_successors(state)
+                successors, freqs = model.get_successors(state)
 
                 if not successors:
                     break 
@@ -242,7 +253,7 @@ def text_generation(t, sentences, n=3, sentence_length=20, num_sentences=20):
                 # word is added to the sequnce 
                 current.append(successor)
 
-            # the attempt is only seen as successful if the desired length is reched 
+            # the attempt is successful if the desired length is reched 
             if len(current) == sentence_length:
                 generated = current 
                 break 
@@ -256,8 +267,7 @@ def text_generation(t, sentences, n=3, sentence_length=20, num_sentences=20):
 
 if __name__ == '__main__':
     full_text = read_articles(['../data/Articles.csv', '../data/bbc-news-data.csv','../data/cnn_dailymail.csv'])
-    
     tokens = clean_articles(full_text)
-    m = markov_model(tokens, n=2)
-    print(text_generation(m, tokens, n=2, sentence_length=10, num_sentences=20))
+    model = markov_model(tokens, n=2)
+    print(text_generation(model, tokens, n=2, sentence_length=15, num_sentences=5))
 

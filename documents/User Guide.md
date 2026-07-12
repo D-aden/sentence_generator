@@ -29,7 +29,7 @@ This creates and activates an isolated environment containing all required packa
 
 ---
 
-## Running Tests (be sure to navigate to the 'src' directory)
+## Running Tests (All commands must be run from the src directory)
 
 
 ### Unit tests

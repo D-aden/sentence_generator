@@ -5,7 +5,7 @@ The program begins with ‘read_articles’, which loads one or more CSV files, 
 
 The ‘Node’ class represents an individual node in the trie structure. Each node stores a children's dictionary containing links to subsequent words and a count value that records how many times a sequence ends at that node. The TrieTree’s ‘add_sequence’ method inserts word sequences and updates the count of the final node, while ‘get_successors’ retrieves all possible next words for a given state along with their frequencies.
 
-The markov_model function constructs the n-gram model using the trie. It moves a sliding window of size n across each tokenised sentence and adds every resulting n-gram to the ‘TrieTree’. The final stage is handled by ‘text_generation’, which generates new sentences of a specified length. It starts by selecting a random state from the model, then repeatedly chooses the next word based on the frequencies stored in the trie. If a sequence cannot be continued before reaching the desired length, the function selects a new starting state and tries again. Once complete, the generated words are joined into sentences, capitalised, and combined to produce the final text.
+The markov_model function constructs the n-gram model using the trie. It moves a sliding window of size n across each tokenised sentence and adds every resulting n-gram to the ‘TrieTree’. The final stage is handled by ‘text_generation’, which generates new sentences of a specified length. It starts by selecting a random starting state from the training sentences, then repeatedly chooses the next word based on the frequencies stored in the trie. If a sequence cannot be continued before reaching the desired length, the function selects a new starting state and tries again. Once complete, the generated words are joined into sentences, capitalised, and combined to produce the final text.
 
 
 
@@ -17,9 +17,9 @@ The markov_model function constructs the n-gram model using the trie. It moves a
 | `read_articles`             | O(n), where *n* is the total size of the CSV files |
 | `clean_articles`            | O(n), where *n* is the length of the input string |
 | `TrieTree.add_sequence()`   | O(n), where *n* is the length of the sequence |
-| `TrieTree.get_successors()` | O(k + n), where *k* is the cost of traversing the tree and *n* is the cost of collecting successors |
-| `markov_model`              | O(n), where *n* is the total number of tokens |
-| `text_generation`           | O(n · l · k), where *n* is the number of sentences, *l* is the sentence length, and *k* is the time complexity of `get_successors()` |
+| `TrieTree.get_successors()` | O(k + n), where *n* is the length of the sequence and *k* is the number of unique successors |
+| `markov_model`              | O(t · n), where *n* is the n-gram size and *t* is the total number of tokens |
+| `text_generation`           | O(n · l · m · k), where *n* is the number of sentences, *l* is the sentence length, *m* is the max attempts and *k* is the time complexity of *get_successors()* |
 
 
 
