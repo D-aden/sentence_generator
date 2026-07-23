@@ -155,14 +155,11 @@ class TrieTree:
         """
         Illustrates the contents of the trie. 
         Returns: 
-            new-line-joined string of up to ten sequences with their corresponding frequencies (i.e 'Hi there (2)')
+            new-line-joined string made up of sequences with their corresponding frequencies (i.e 'Hi there (2)')
         """
         sequences = []
 
         def dfs(node, path):
-            # search ends after 10 sequences 
-            if len(sequences)>=10:
-                return 
             # if an observed sequence is reached (count>0), add to return 
             if node.count > 0: 
                 sequences.append((' '.join(path), node.count))
@@ -190,11 +187,11 @@ def markov_model(sentences, n=3):
 
     for sentence in sentences:
         # skip sentences that are too short to form a n-gram
-        if len(sentence)<n:
+        if len(sentence)<n+1:
             continue 
         # slide a window of size n across the sentence, and add each n-gram to the trie
-        for i in range(len(sentence)-n+1):
-            sequence = sentence[i:i+n]
+        for i in range(len(sentence)-n):
+            sequence = sentence[i:i+n+1]
             model.add_sequence(sequence)
 
     return model
@@ -215,13 +212,13 @@ def text_generation(model, sentences, n=3, sentence_length=20, num_sentences=20)
         the generated text with sentences separated with fullstops. 
     """
     all_sentences = []
-    state_len = n-1
+    state_len = n
 
     # only sentences longer than the state length is chosen 
     valid_sentences = [s for s in sentences if len(s) > state_len]
 
     if not valid_sentences:
-            return ''
+        return ''
 
     for i in range(num_sentences):
         attempts = 0

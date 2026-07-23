@@ -44,8 +44,8 @@ The tests can be reproduced by running the project's automated test suite. All t
 - Verify duplicate successors are not returned
 - Verify an empty list is returned when no successors exist
 - Verify duplicate sequences are counted correctly 
-- Verify that __str__() preserves prefix sequences 
-- Verify that __str__() limits output to ten sequences 
+- Verify that prefix sequences are preserves 
+- Verify that complex trie is structured correctly
 
 #### `markov_model()`
 - Verify a `TrieTree` is returned
@@ -76,7 +76,7 @@ Integration tests were performed to verify that components interact as expected.
 - Verify the correct number of sentences is generated
 - Verify generated text contains only words from the original vocabulary 
 - Verify generated words originate from the source CSV
-- Verify results are reproducible when using the same inputs and random seed
+- Verify that n-grams (1-5) are present in the generated text
 
 ## Running Tests (All commands must be run from the src directory)
 

@@ -1,5 +1,4 @@
 import unittest 
-import random
 from main import clean_articles 
 from main import read_articles
 from main import TrieTree
@@ -41,13 +40,13 @@ class TestIntegration(unittest.TestCase):
     def test_read_to_markov_returns_trietree(self):
         text = read_articles('../data/sample.csv')
         tokens = clean_articles(text)
-        trie = markov_model(tokens)
+        trie = markov_model(tokens, n=3)
         self.assertIsInstance(trie, TrieTree)
 
     def test_trie_learns_transitions_from_csv(self):
         """
         test to confirm data flows through each stage correctly
-        'the cat sat' and 'the dog chased' both appear in sample.csv
+        'the cat sat on' and 'the dog chased a' both appear in sample.csv
         in the pipeline sequence read → clean → model, the trie must know
         these transitions
         """
@@ -56,18 +55,18 @@ class TestIntegration(unittest.TestCase):
         trie = markov_model(tokens, n=3)
 
 
-        successors, _ = trie.get_successors(['the', 'cat'])
-        self.assertIn('sat', successors)
+        successors, _ = trie.get_successors(['the', 'cat', 'sat'])
+        self.assertIn('on', successors)
 
 
-        successors, _ = trie.get_successors(['the', 'dog'])
-        self.assertIn('chased', successors)
+        successors, _ = trie.get_successors(['the', 'dog', 'chased'])
+        self.assertIn('a', successors)
 
     
     def test_entire_pipeline(self): 
         text = read_articles('../data/sample.csv')
         tokens = clean_articles(text)
-        trie = markov_model(tokens)
+        trie = markov_model(tokens, n=3)
         result = text_generation(trie, tokens, n=3, sentence_length=10, num_sentences=2)
         self.assertIsInstance(result, str)
         self.assertGreater(len(result), 0)
@@ -87,14 +86,14 @@ class TestIntegration(unittest.TestCase):
             self.assertIn(word, vocab)
     
     def test_generation_sentence_count(self):
-        trie = markov_model(self.TEST_TOKENS)
+        trie = markov_model(self.TEST_TOKENS, n=3)
         for num in [1, 2, 5]:
             result = text_generation(trie, self.TEST_TOKENS, n=3, sentence_length=5, num_sentences=num)
             parts = result.rstrip('.').split('. ')
             self.assertEqual(len(parts), num)
 
     def test_generation_output_words_in_vocab(self):
-        trie = markov_model(self.TEST_TOKENS)
+        trie = markov_model(self.TEST_TOKENS, n=3)
         vocab = set(word for sentence in self.TEST_TOKENS for word in sentence)
         result = text_generation(trie, self.TEST_TOKENS, n=3, sentence_length=10, num_sentences=5).lower()
         for word in result.replace('.', '').split():
@@ -109,18 +108,31 @@ class TestIntegration(unittest.TestCase):
         for word in result.replace('.', '').split():
             self.assertIn(word, vocab)
 
-    def test_pipeline_is_reproducible(self):
-        text = read_articles('../data/sample.csv')
-        tokens = clean_articles(text)
-        trie = markov_model(tokens, n=3)
+    
+    def test_ngrams_present_for_each_degree(self):
+        for n in range(1, 6):
+            full_text = read_articles(['../data/bbc-news-data.csv'])
+            sentences = clean_articles(full_text)
+            model = markov_model(sentences, n=n)
 
-        random.seed(99)
-        result1 = text_generation(trie, tokens, n=3, sentence_length=8, num_sentences=3)
-        random.seed(99)
-        result2 = text_generation(trie, tokens, n=3, sentence_length=8, num_sentences=3)
+            for attempt in range(10):
+                text = text_generation(model, sentences, n=n, sentence_length=10, num_sentences=5)
 
+                raw_sentences = text.rstrip('.').split('. ')
 
-        self.assertEqual(result1, result2)
+                for raw_sentence in raw_sentences:
+                    words = raw_sentence.lower().split()
+                    for i in range(len(words) - (n + 1) + 1):
+                        ngram = words[i:i + n + 1]
+                        current = model.root
+                        for word in ngram:
+                            current = current.children.get(word)
+                            if current is None: 
+                                break 
+                        found = current is not None and current.count>0
+
+                        self.assertTrue(found, f"n-gram {ngram} (order {n}) not found in trie")
+
 
 if __name__ == '__main__':
     unittest.main()

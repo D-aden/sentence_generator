@@ -106,11 +106,12 @@ class TestCleanArticles(unittest.TestCase):
         further investigation.
         """
         result = [
-            ['read', 'the', 'full', 'report', 'at'],
-            ['more', 'details', 'are', 'available', 'at'],
-            ['researchers', 'say', 'the', 'results', 'are',
-            'promising', 'and', 'deserve', 'further',
-            'investigation']]
+        ['read', 'the', 'full', 'report', 'at'],
+        ['more', 'details', 'are', 'available', 'at'],
+        ['researchers', 'say', 'the', 'results', 'are',
+        'promising', 'and', 'deserve', 'further',
+        'investigation']
+        ]
    
         self.assertEqual(clean_articles(text), result)
 
@@ -144,7 +145,6 @@ class TestCleanArticles(unittest.TestCase):
     
     
     def test_edge_cases(self):
-        #check that punctuation and empty strings are handles
         text = ''
         result = []
         self.assertEqual(clean_articles(text), result)
@@ -192,12 +192,11 @@ class TestTrieTree(unittest.TestCase):
         self.assertEqual(freqs[index], 2)
     
     def test_branch_end(self):
-        #a case with no children should return empty"""
         self.trie.add_sequence(['a', 'b', 'c'])
         successors, freqs = self.trie.get_successors(['a', 'b', 'c'])
         self.assertEqual(successors, [])
 
-    #test __str__()
+
     def test_str_duplicates(self):
         self.trie.add_sequence(['a', 'b', 'c'])
         self.trie.add_sequence(['a', 'b', 'c'])
@@ -215,16 +214,102 @@ class TestTrieTree(unittest.TestCase):
         self.assertIn('a b c (1)', result)
         self.assertIn('a b (1)', result)
 
-    def test_str_limit(self):
-        for i in range(15):
-            self.trie.add_sequence([f'word{i}'])
-        result=str(self.trie)
-        self.assertEqual(result.count('\n'), 9)
+
+    def test_complex_trie_structure(self):
+        sequences = [
+            ['a', 'b', 'c'],
+            ['a', 'b', 'c'],       
+            ['a', 'b', 'd'],      
+            ['a', 'b'],            
+            ['a', 'x'],            
+            ['a', 'x', 'y', 'z'],  
+            ['m'],                 
+            ['m', 'n'],            
+            ['p', 'q', 'r'],       
+            ['p', 'q', 'r'],       
+            ['p', 'q', 's'],       
+        ]
+
+        for seq in sequences:
+            self.trie.add_sequence(seq)
+
+        root = self.trie.root
+        self.assertEqual(set(root.children.keys()), {'a', 'm', 'p'})
+        self.assertEqual(root.count, 0)  
+
+        a = root.children['a']
+        self.assertEqual(a.count, 0) 
+        self.assertEqual(set(a.children.keys()), {'b', 'x'})
+
+        ab = a.children['b']
+        self.assertEqual(ab.count, 1) 
+        self.assertEqual(set(ab.children.keys()), {'c', 'd'})
+   
+        abc = ab.children['c']
+        self.assertEqual(abc.count, 2)
+        self.assertEqual(abc.children, {}) 
+
+        abd = ab.children['d']
+        self.assertEqual(abd.count, 1)
+        self.assertEqual(abd.children, {})
+
+        ax = a.children['x']
+        self.assertEqual(ax.count, 1)
+        self.assertEqual(set(ax.children.keys()), {'y'})
+
+        axy = ax.children['y']
+        self.assertEqual(axy.count, 0)
+        self.assertEqual(set(axy.children.keys()), {'z'})
+
+        axyz = axy.children['z']
+        self.assertEqual(axyz.count, 1)
+        self.assertEqual(axyz.children, {})
+
+        m = root.children['m']
+        self.assertEqual(m.count, 1)  
+        self.assertEqual(set(m.children.keys()), {'n'})
+
+        mn = m.children['n']
+        self.assertEqual(mn.count, 1)
+        self.assertEqual(mn.children, {})
+
+        p = root.children['p']
+        self.assertEqual(p.count, 0)
+        self.assertEqual(set(p.children.keys()), {'q'})
+
+        pq = p.children['q']
+        self.assertEqual(pq.count, 0)
+        self.assertEqual(set(pq.children.keys()), {'r', 's'})
+
+        pqr = pq.children['r']
+        self.assertEqual(pqr.count, 2) 
+        self.assertEqual(pqr.children, {})
+
+        pqs = pq.children['s']
+        self.assertEqual(pqs.count, 1)
+        self.assertEqual(pqs.children, {})
+
+        result = str(self.trie)
+        output = {'a b c (2)', 
+            'a b d (1)',
+            'a b (1)',
+            'a x (1)',
+            'a x y z (1)',
+            'm (1)', 
+            'm n (1)',
+            'p q r (2)', 
+            'p q s (1)',
+        }
+        result_lines = set(result.split('\n'))
+        self.assertEqual(result_lines, output)
+
 
 class TestMarkovModel(unittest.TestCase):
     def setUp(self):
-        self.tokens = [['the', 'monkey', 'fell', 'off', 'the', 'tree'], 
-        ['the', 'monkey', 'cried', 'and', 'the', 'monkey', 'fell', 'asleep']]
+        self.tokens = [
+        ['the', 'monkey', 'fell', 'off', 'the', 'tree'], 
+        ['the', 'monkey', 'fell', 'off', 'the', 'roof'],
+        ['the', 'monkey', 'fell', 'asleep']]
 
     def test_returns_trie(self):
         model = markov_model(self.tokens, n=3)
@@ -232,36 +317,39 @@ class TestMarkovModel(unittest.TestCase):
 
     def test_repetition_counts(self): 
         model = markov_model(self.tokens, n=3)
-        successors, freqs = model.get_successors(['the', 'monkey'])
-        fell_index = successors.index('fell')
-        cried_index = successors.index('cried')
-        self.assertGreater(freqs[fell_index], freqs[cried_index])
+        successors, freqs = model.get_successors(['the', 'monkey', 'fell'])
+        off_index = successors.index('off')
+        asleep_index = successors.index('asleep')
+        self.assertGreater(freqs[off_index], freqs[asleep_index])
 
 class TestTextGeneration(unittest.TestCase):
     def setUp(self):
-        self.tokens = [['the', 'monkey', 'fell', 'off', 'the', 'tree', 'the', 'monkey', 'cried', 'and', 'the', 'monkey', 'fell', 'asleep']]
-        self.model = markov_model(self.tokens, n=4)
+        self.tokens = [
+        ['the', 'monkey', 'fell', 'off', 'the', 'tree'], 
+        ['the', 'monkey', 'fell', 'off', 'the', 'roof'],
+        ['the', 'monkey', 'fell', 'asleep']]
+        self.model = markov_model(self.tokens, n=3)
 
     
     def test_return_string(self):
-        result = text_generation(self.model, self.tokens, n=4, sentence_length=10, num_sentences=3)
+        result = text_generation(self.model, self.tokens, n=3, sentence_length=5, num_sentences=3)
         self.assertIsInstance(result, str)
 
     
     def test_output_not_empty(self):
-        result = text_generation(self.model, self.tokens, n=4, sentence_length=10, num_sentences=3)
+        result = text_generation(self.model, self.tokens, n=3, sentence_length=5, num_sentences=3)
         self.assertTrue(len(result)>0)
         
     
     def test_number_of_sentences(self):
         num_sentences = 5
-        result = text_generation(self.model, self.tokens, n=4, sentence_length=10, num_sentences=num_sentences)
+        result = text_generation(self.model, self.tokens, n=3, sentence_length=5, num_sentences=num_sentences)
         sentences = re.split(r'\. ', result.strip())
         self.assertEqual(len(sentences), num_sentences)
     
     def test_length_of_sentences(self):
         sentence_length = 5
-        result = text_generation(self.model, self.tokens, n=4, sentence_length=sentence_length, num_sentences=5)
+        result = text_generation(self.model, self.tokens, n=3, sentence_length=sentence_length, num_sentences=5)
         sentences = [s for s in re.split(r'\. ', result) if s.strip()]
         for s in sentences: 
             self.assertEqual(len(s.split()), sentence_length)
